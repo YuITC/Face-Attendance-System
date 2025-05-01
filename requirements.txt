@@ -1,0 +1,14 @@
+# conda install pytorch==2.5.1 torchvision==0.20.1 pytorch-cuda=12.1 -c pytorch -c nvidia
+# conda install faiss-gpu=1.9.0 -c pytorch -c nvidia
+
+facenet-pytorch
+retina-face
+timm
+opencv-python
+tqdm
+scikit-learn
+matplotlib
+tf-keras
+tensorflow <= 2.15.0
+kagglehub
+matplotlib
