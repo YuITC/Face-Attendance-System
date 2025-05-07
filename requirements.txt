@@ -1,6 +1,9 @@
 # conda install pytorch==2.5.0 torchvision==0.20.0 pytorch-cuda=12.1 -c pytorch -c nvidia
 # conda install faiss-gpu=1.9.0 -c pytorch -c nvidia
 
+torch
+torchvision
+faiss-cpu
 timm
 facenet-pytorch
 opencv-python
