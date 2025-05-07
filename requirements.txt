@@ -7,6 +7,7 @@ faiss-cpu
 timm
 facenet-pytorch
 opencv-python
+opencv-python-headless
 tqdm
 scikit-learn
 matplotlib
