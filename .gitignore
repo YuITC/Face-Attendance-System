@@ -4,3 +4,4 @@ dataset/
 gallery/
 results/models/best_embedding_model.pth
 tmp/
+utils/

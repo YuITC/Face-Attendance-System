@@ -1,15 +1,13 @@
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
 import cv2
 import numpy as np
 from PIL import Image
+import timm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import timm
 from torchvision.transforms.functional import to_pil_image
-
-from settings import DEVICE, TRANSFORM
+from torchvision import transforms
+from settings import DEVICE, IMG_SIZE
 
 
 class EmbeddingModel(nn.Module):
@@ -58,7 +56,13 @@ def get_embedding(emb_model, img_input):
     else:
         raise TypeError(f"Unsupported input type: {type(img_input)}")
         
-    img = TRANSFORM(img).unsqueeze(0).to(DEVICE)
+    base_tf = transforms.Compose([
+        transforms.Resize(IMG_SIZE),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225]),
+    ])
+
+    img = base_tf(img).unsqueeze(0).to(DEVICE)
     with torch.no_grad():
         emb = emb_model(img).cpu().numpy()
     return emb.reshape(1, -1).astype(np.float32)
