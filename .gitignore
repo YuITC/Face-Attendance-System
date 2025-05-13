@@ -2,6 +2,6 @@ __pycache__/
 data/
 dataset/
 gallery/
-results/models/best_embedding_model.pth
 tmp/
 utils/
+results/

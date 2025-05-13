@@ -152,6 +152,63 @@ def search_face(index, info, thresh=THRESHOLD):
     cv2.destroyAllWindows()
     
 
+def identify_face_from_image(img_input, index, info, detector, embedder, thresh=THRESHOLD):
+    if index.ntotal == 0:
+        print('No faces registered in the system.')
+        return None, None, 0.0
+    
+    # Convert input to proper format for processing
+    if isinstance(img_input, str):
+        # Load image from file path
+        img = cv2.imread(img_input)
+        if img is None:
+            print(f"Error: Could not load image from {img_input}")
+            return None, None, 0.0
+        pil_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    elif isinstance(img_input, np.ndarray):
+        # Handle numpy array (likely from cv2)
+        pil_img = Image.fromarray(cv2.cvtColor(img_input, cv2.COLOR_BGR2RGB))
+    elif isinstance(img_input, Image.Image):
+        # Already a PIL image
+        pil_img = img_input
+    else:
+        print(f"Unsupported input type: {type(img_input)}")
+        return None, None, 0.0
+    
+    # Detect face in the image
+    bbox, _ = detector.detect(np.array(pil_img))
+    
+    if bbox is None or len(bbox) == 0:
+        print("No face detected in the image.")
+        return None, None, 0.0
+    
+    # If multiple faces detected, use only the first one
+    if len(bbox) > 1:
+        print(f"Multiple faces ({len(bbox)}) detected. Using the first one.")
+    
+    # Extract face from image
+    face_img = detector.extract(pil_img, bbox, save_path=None)
+    
+    if face_img is None:
+        print("Failed to extract face from the image.")
+        return None, None, 0.0
+    
+    # Get embedding for the face
+    face_emb = get_embedding(embedder, face_img)
+    
+    # Search for the face in the index
+    D, I = index.search(face_emb, 1)
+    score, idx = D[0][0], I[0][0]
+    
+    # Return result based on threshold
+    if score >= thresh:
+        pid = info[idx]['pid']
+        name = info[idx]['name']
+        return pid, name, float(score)
+    else:
+        return None, None, float(score)
+    
+
 if __name__ == "__main__":
     index, info = build_db(EMB_DIM, INDEX_PATH, INFO_PATH)
     embedder    = load_model(EmbeddingModel(), MODEL_PATH, DEVICE)
@@ -159,10 +216,12 @@ if __name__ == "__main__":
     
     
     parser = argparse.ArgumentParser(description='Face Attendance System')
-    parser.add_argument('--mode'  , type=str, choices=['detect', 'add', 'remove', 'recognize', 'overview'], required=True, help='Mode: detect, add, remove, recognize face, or view database information')
+    parser.add_argument('--mode'  , type=str, choices=['detect', 'add', 'remove', 'recognize', 'overview', 'identify'], required=True, 
+                        help='Mode: detect, add, remove, recognize face, view database information, or identify face in image')
     parser.add_argument('--pid'   , type=str, help='Person ID')
     parser.add_argument('--name'  , type=str, help='Person name')
     parser.add_argument('--thresh', type=float, default=THRESHOLD, help='Threshold for face recognition')
+    parser.add_argument('--image' , type=str, help='Path to image file for identification')
     args = parser.parse_args()
  
     
@@ -183,6 +242,19 @@ if __name__ == "__main__":
             
     elif args.mode == 'recognize':
         search_face(index, info, args.thresh)
+        
+    elif args.mode == 'identify':
+        if args.image is None:
+            print('Please provide --image path for identifying a face in an image.')
+        else:
+            if not os.path.exists(args.image):
+                print(f"Error: Image file {args.image} does not exist.")
+            else:
+                pid, name, score = identify_face_from_image(args.image, index, info, detector, embedder, args.thresh)
+                if pid is not None:
+                    print(f"Identified person: ID={pid}, Name={name}, Confidence={score:.4f}")
+                else:
+                    print(f"No person identified with confidence above threshold ({args.thresh}). Best match score: {score:.4f}")
         
     elif args.mode == 'overview':
         index, info = build_db(EMB_DIM, INDEX_PATH, INFO_PATH)
