@@ -3,7 +3,7 @@ import torch
 DEVICE    = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 IMG_SIZE  = 112 # 
 EMB_DIM   = 256
-THRESHOLD = 0.7 #
+THRESHOLD = 0.9 #
 # print(f'Using device: {DEVICE}')
 
 IMG_PER_USER = 10

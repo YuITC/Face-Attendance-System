@@ -11,7 +11,7 @@ from facenet_pytorch import MTCNN
 
 from settings import INFO_PATH, INDEX_PATH, THRESHOLD, DEVICE, IMG_SIZE, MODEL_PATH, EMB_DIM, IMG_PER_USER
 from models   import EmbeddingModel, load_model, get_embedding
-from utils    import build_db, get_db_info
+from utils    import build_db, get_db_info, build_db_from_images
 
 
 def detect_face():
@@ -95,6 +95,7 @@ def add_face(pid, name, index, info):
         print(f"Added person ID {pid} to index.")
 
 
+
 def remove_face(pid, index, info):
     if pid not in [i['pid'] for i in info]: print(f"ID {pid} does not exist."); return
     else:
@@ -105,7 +106,7 @@ def remove_face(pid, index, info):
             os.rmdir(pdir)
         
         info  = [i for i in info if i['pid'] != pid]
-        index = faiss.IndexFlatIP(128)
+        index = faiss.IndexFlatIP(EMB_DIM)
         for i in info:
             index.add(i['embedding'].reshape(1, -1))
         faiss.write_index(index, INDEX_PATH)
@@ -216,16 +217,20 @@ if __name__ == "__main__":
     
     
     parser = argparse.ArgumentParser(description='Face Attendance System')
-    parser.add_argument('--mode'  , type=str, choices=['detect', 'add', 'remove', 'recognize', 'overview', 'identify'], required=True, 
+    parser.add_argument('--mode'  , type=str, choices=['detect', 'add', 'remove', 'recognize', 'overview', 'identify', 'build_with_img'], required=True, 
                         help='Mode: detect, add, remove, recognize face, view database information, or identify face in image')
     parser.add_argument('--pid'   , type=str, help='Person ID')
     parser.add_argument('--name'  , type=str, help='Person name')
     parser.add_argument('--thresh', type=float, default=THRESHOLD, help='Threshold for face recognition')
     parser.add_argument('--image' , type=str, help='Path to image file for identification')
+    parser.add_argument('--img_dir', type=str, help='Directory containing images for building database')
     args = parser.parse_args()
  
-    
-    if args.mode == 'detect':
+ 
+    if args.mode == 'build_with_img':
+        build_db_from_images(index, info, args.img_dir, embedder)
+
+    elif args.mode == 'detect':
         detect_face()
     
     elif args.mode == 'add':

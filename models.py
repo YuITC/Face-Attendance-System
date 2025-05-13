@@ -33,6 +33,14 @@ from settings import DEVICE, IMG_SIZE
 #         emb  = self.embedding_head(feat)
 #         emb  = F.normalize(emb, p=2, dim=1)
 #         return emb
+    
+# def load_model(model, model_path, device):
+#     state = torch.load(model_path, map_location=device)
+
+#     model.backbone.load_state_dict(state['model_backbone'])
+#     model.embedding_head.load_state_dict(state['model_embedding'])
+#     model.to(device)
+#     return model.eval()
 
 
 class BasicBlock(nn.Module):
@@ -113,14 +121,6 @@ class EmbeddingModel(nn.Module):
         return emb
     
     
-# def load_model(model, model_path, device):
-#     state = torch.load(model_path, map_location=device)
-
-#     model.backbone.load_state_dict(state['model_backbone'])
-#     model.embedding_head.load_state_dict(state['model_embedding'])
-#     model.to(device)
-#     return model.eval()
-
 def load_model(model, model_path, device):
     state = torch.load(model_path, map_location=device)
     model.load_state_dict(state['model_state'])
