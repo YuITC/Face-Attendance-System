@@ -1,53 +1,52 @@
 import os
 import faiss
 import pickle
-import numpy as np
 from models import get_embedding
-from settings import IMG_SIZE, EMB_DIM, INFO_PATH, INDEX_PATH
+from settings import EMB_DIM, INFO_PATH, INDEX_PATH, GALLERY_PATH
 
 
-def build_db(emb_dim, index_path, info_path):
-    os.makedirs(os.path.dirname(index_path), exist_ok=True)
-    os.makedirs(os.path.dirname(info_path), exist_ok=True)
+def build_db(emb_model):
+    os.makedirs(os.path.dirname(INDEX_PATH), exist_ok=True)
+    os.makedirs(os.path.dirname(INFO_PATH), exist_ok=True)
     
-    if os.path.exists(index_path):
-        index = faiss.read_index(index_path)
-    else:
-        index = faiss.IndexFlatIP(emb_dim)
-        faiss.write_index(index, index_path)
+    index = faiss.IndexFlatIP(EMB_DIM)
+    info  = []
         
-    if os.path.exists(info_path):
-        info = pickle.load(open(info_path,'rb'))
-    else:
-        info = []
-        pickle.dump(info, open(info_path,'wb'))
+    if len(os.listdir(GALLERY_PATH)) > 0:
+        for id_name in os.listdir(GALLERY_PATH):
+            pdir = os.path.join(GALLERY_PATH, id_name)
+            if not os.path.isdir(pdir): 
+                continue
+            
+            for filename in os.listdir(pdir):
+                img_path = os.path.join(pdir, filename)
+                pid      = id_name.split('_')[0]
+                name     = id_name.split('_')[1]
+                
+                index.add(get_embedding(emb_model, img_path))
+                info.append({'pid': pid, 'name': name, 'img_path': img_path})
+            print(f"Added {id_name} to index.")
 
+    faiss.write_index(index, INDEX_PATH)
+    pickle.dump(info, open(INFO_PATH, 'wb'))
     return index, info
 
 
-def build_db_from_images(index, info, image_folder, emb_model):
-    pid      = os.path.basename(image_folder)
-    name     = f"User_{pid}"
-
-    face_embs = []
-    for filename in os.listdir(image_folder):
-        img_path = os.path.join(image_folder, filename)
-        face_embs.append(get_embedding(emb_model, img_path))
-        
-    for face_emb in face_embs:
-        info.append({'pid': pid, 'name': name, 'embedding': face_emb})
-    pickle.dump(info, open(INFO_PATH, 'wb'))
-    index.add(np.concatenate(face_embs, axis=0))
-    faiss.write_index(index, INDEX_PATH)
-    print(f"Added person ID {pid} to index.")
-
+def remove_db():
+    if os.path.exists(INDEX_PATH):
+        os.remove(INDEX_PATH)
+    if os.path.exists(INFO_PATH):
+        os.remove(INFO_PATH)
 
 def get_db_info(index, info):
     if index.ntotal == len(info):
-        pids  = set([i['pid'] for i in info])
-        names = set([i['name'] for i in info])
-        print(f"Number of registered faces: {len(pids)}")
-        for pid, name in zip(pids, names):
-            print(f"- ID: {pid}, Name: {name}")
+        pid  = set([i['pid'] for i in info])
+        name = set([i['name'] for i in info])
+        print(f"Number of registered faces: {len(pid)}")
+        for x, y in zip(pid, name):
+            print(f"- ID: {x}, Name: {y}")
+            
+    elif index == None and info == None:
+        print('No faces registered.')
     else:
         print('Mismatch between index and info.')

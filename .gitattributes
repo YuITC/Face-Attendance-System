@@ -1,0 +1,13 @@
+# Git LFS Configuration
+
+# ML Models - track only files in results/models directory
+results/models/** filter=lfs diff=lfs merge=lfs -text
+
+# Python bytecode
+*.pyc -text
+
+# Documentation and text files - treat as regular text
+*.md text
+*.txt text
+*.py text
+LICENSE text
